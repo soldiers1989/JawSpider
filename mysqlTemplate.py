@@ -55,8 +55,8 @@ class mysqlTemplate:
                           + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng + "')"
         self.insertSql = self.insertSql.decode(encoding="utf-8", errors="ignore")
         print self.insertSql
-        # self.cursor.execute(self.insertSql)
-        # self.db.commit()
+        self.cursor.execute(self.insertSql)
+        self.db.commit()
 
     def release(self):
         self.db.close()

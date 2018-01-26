@@ -73,12 +73,10 @@ class HeiBieSpider:
         document = open("HeiBeiPage.txt", "r")
         page=document.readline()
         page=int(page)
-
         document.close()
         for i in range(page, 85077 + 1):
             obj.paras = {"channelId": "431", "listsize": "85077", "pagego": str(i)}
             document = open("HeiBeiPage.txt", "w+")
-            print "文件名: ", document.name
             document.write(str(i))
             document.close()
             obj.getLinkList()
