@@ -15,6 +15,7 @@ class ShenzhengSpider:
         self.paras = {}
         self.data = ktgg()
         self.data.no = '216'
+        self.data.sheng=''
         self.sqltempe = mysqlTemplate()
         self.page = 1
         self.headers = {
@@ -61,9 +62,12 @@ class ShenzhengSpider:
             yuangao = re.compile('((原告)|(申请(执行)?))(人)? ：(.*?)<br/>', re.S)
             beigaoResult = re.findall(beigao, str(ji))
             yuangaoResult = re.findall(yuangao, str(ji))
+            qita_patten = re.compile('(第三)(人|方) ：(.*?)<br/>', re.S)
+            qita_result = re.findall(qita_patten, str(ji))
             dangshiren_Result = re.findall(dangshiren_pattern, str(ji))
             beigaolist = []
             yuangaoList = []
+            qitaList = []
             try:
                 for reslut in beigaoResult:
                     beigaolist += reslut[5].strip().split(' ')
@@ -76,6 +80,12 @@ class ShenzhengSpider:
             except:
 
                 print("没有原告")
+            try:
+                for reslut in qita_result:
+                    qitaList += reslut[2].strip().split(' ')
+            except:
+
+                print("没有第三人")
 
             try:
                 space_pattern = re.compile("\s{1,}", re.S)
@@ -94,6 +104,14 @@ class ShenzhengSpider:
                 continue
             data.yuangao = ",".join(yuangaoList)
             data.beigao = ",".join(beigaolist)
+
+            data.qita = ",".join(qitaList)
+            if len(data.yuangao) > 0:
+                data.dangshirenjx = data.yuangao + "," + data.beigao
+            else:
+                data.dangshirenjx = data.beigao
+            if len(data.qita) > 0:
+                data.dangshirenjx = data.dangshirenjx + "," + data.qita
             self.sqltempe.insertKtgg(data)
 
     def start(self):
@@ -108,12 +126,4 @@ class ShenzhengSpider:
 
 obj = ShenzhengSpider()
 obj.start()
-# ji = "被告人 ：深圳弘康投资有限公司 深圳彩田文旅传媒投资有限公司 王大伟<br/>申请执行人 ：广东利元亨智能装备有限公司 <br/>被申请执行人 ：深圳市彩田建筑规划设计研究院有限公司<br/>"
-# beigao = re.compile('((被告)|(被申请(执行)?))(人)? ：(.*?)<br/>', re.S)
-# yuangao = re.compile('(原告)|(申请(执行)?)(人)? ：(.*?)<br/>', re.S)
-# beigaoResult = re.findall(beigao, ji)
-# yuangaoResult = re.findall(yuangao, ji)
-# for reslut in beigaoResult:
-#     print reslut[5]
-# for reslut in yuangaoResult:
-#     print reslut[4]
+

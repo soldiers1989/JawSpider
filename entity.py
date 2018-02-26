@@ -18,6 +18,8 @@ class ktgg:
         self.dangshiren = ""
         self.sheng = ""
         self.qita = ""
+        self.dangshirenjx=''
+        self.dangshirenjx_flag=''
 
 
 class log:

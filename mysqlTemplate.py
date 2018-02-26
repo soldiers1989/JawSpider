@@ -20,7 +20,7 @@ class mysqlTemplate:
 
     # 使用execute方法执行SQL语句
     def insertktggList(self, obj):
-        self.insertSql = "INSERT INTO ktgg (no, created_at, gonggao_id, gonggao, fayuan, fating, kaitingriqi, anhao, anyou, chengban, zhushen, yuangao, beigao, dangshiren,qita,sheng) VALUES "
+        self.insertSql = "INSERT INTO ktgg (no, created_at, gonggao_id, gonggao, fayuan, fating, kaitingriqi, anhao, anyou, chengban, zhushen, yuangao, beigao, dangshiren,qita,sheng,dangshirenjx,danshirenjx_flag) VALUES "
 
         isfirst = True
         for item in obj:
@@ -28,13 +28,13 @@ class mysqlTemplate:
                 self.insertSql += "('" + item.no + "','" + item.created_at + "','" + item.gonggao_id + "','" + \
                                   item.gonggao + "','" + item.fayuan + "','" + item.fating + "','" + item.kaitingriqi + \
                                   "','" + item.anhao + "','" + item.anyou + "','" + item.chengban + "','" + item.zhushen \
-                                  + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng + "')"
+                                  + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng+ "','" + item.dangshirenjx + "','" + item.dangshirenjx_flag + "')"
                 isfirst = False
             else:
                 self.insertSql += ",('" + item.no + "','" + item.created_at + "','" + item.gonggao_id + "','" + \
                                   item.gonggao + "','" + item.fayuan + "','" + item.fating + "','" + item.kaitingriqi + \
                                   "','" + item.anhao + "','" + item.anyou + "','" + item.chengban + "','" + item.zhushen \
-                                  + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng + "')"
+                                  + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','"+ item.sheng +"','" + item.dangshirenjx + "','" + item.dangshirenjx_flag + "')"
         print(self.insertSql)
         # self.cursor.execute(self.insertSql)
         # self.db.close()
@@ -47,16 +47,16 @@ class mysqlTemplate:
         self.db.close()
 
     def insertKtgg(self, item):
-        self.insertSql = "INSERT INTO ktgg (no, created_at, gonggao_id, gonggao, fayuan, fating, kaitingriqi, anhao, anyou, chengban, zhushen, yuangao, beigao, dangshiren,qita,sheng) VALUES "
+        self.insertSql = "INSERT INTO ktgg (no, created_at, gonggao_id, gonggao, fayuan, fating, kaitingriqi, anhao, anyou, chengban, zhushen, yuangao, beigao, dangshiren,qita,sheng,dangshirenjx,dangshirenjx_flag) VALUES "
 
         self.insertSql += "('" + item.no + "','" + item.created_at + "','" + item.gonggao_id + "','" + \
-                          item.gonggao + "','" + item.fayuan + "','" + item.fating + "','" + item.kaitingriqi + \
-                          "','" + item.anhao + "','" + item.anyou + "','" + item.chengban + "','" + item.zhushen \
-                          + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng + "')"
+                                  item.gonggao + "','" + item.fayuan + "','" + item.fating + "','" + item.kaitingriqi + \
+                                  "','" + item.anhao + "','" + item.anyou + "','" + item.chengban + "','" + item.zhushen \
+                                  + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng + "','" + item.dangshirenjx + "','" + item.dangshirenjx_flag + "')"
         self.insertSql = self.insertSql.decode(encoding="utf-8", errors="ignore")
         print self.insertSql
         self.cursor.execute(self.insertSql)
-        self.db.commit()
+        # self.db.commit()
 
     def release(self):
         self.db.close()
