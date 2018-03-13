@@ -53,11 +53,22 @@ class mysqlTemplate:
                                   item.gonggao + "','" + item.fayuan + "','" + item.fating + "','" + item.kaitingriqi + \
                                   "','" + item.anhao + "','" + item.anyou + "','" + item.chengban + "','" + item.zhushen \
                                   + "','" + item.yuangao + "','" + item.beigao + "','" + item.dangshiren + "','" + item.qita + "','" + item.sheng + "','" + item.dangshirenjx + "','" + item.dangshirenjx_flag + "')"
-        self.insertSql = self.insertSql.decode(encoding="utf-8", errors="ignore")
+        # self.insertSql = self.insertSql.decode(encoding="utf-8", errors="ignore")
         print self.insertSql
         self.cursor.execute(self.insertSql)
-        # self.db.commit()
+        self.db.commit()
 
+    def queryCountBy_gonggaoid_and_no(self, gonggaoid, no):
+        self.insertSql = "SELECT count(1) FROM ktgg WHERE no=" + str(no) + " AND gonggao_id='" + str(gonggaoid) + "'"
+        try:
+            # 执行SQL语句
+            self.cursor.execute(self.insertSql)
+            # 获取所有记录列表
+            results = self.cursor.fetchall()
+            return results[0][0]
+
+        except:
+            print "Error: unable to fecth data"
     def release(self):
         self.db.close()
 # 使用 fetchone() 方法获取一条数据

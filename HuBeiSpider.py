@@ -27,6 +27,7 @@ class HuBeiSpider:
         self.proxies = {}
         self.return_time = 5
         self.page = 1
+        self.data.dangshirenjx_flag='1'
         self.isNextFayuan = False
 
     # 各地区法院的链接
