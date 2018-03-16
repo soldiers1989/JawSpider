@@ -36,17 +36,27 @@ class zhongguotingshenggongkaiwan:
         tree = etree.HTML(text)
         data = copy.deepcopy(self.data)
         try:
-            data.gonggao = tree.xpath('//div[@class="part case-summary"]/p/@title')[0].strip()
+            data.gonggao = tree.xpath('//div[@class="part case-summary"]/p/@title')[0].strip().replace('\'',
+                                                                                                                 '')
         except:
             print(u"没有公告")
-        data.anhao = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[1]/@title')[0].strip()
-        data.anyou = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[3]/@title')[0].strip()
-        data.fating = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[4]/text()')[0].strip()
+        try:
+            data.anhao = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[1]/@title')[0].strip().replace('\'',
+                                                                                                                 '')
+        except:
+            print(u"MEI YOU AN HAO")
+        try:
+            data.anyou = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[3]/@title')[0].strip().replace('\'',
+                                                                                                                 '')
+        except:
+            print(u"MEI YOU AN anyou")
+        data.fating = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[4]/text()')[0].strip().replace('\'',
+                                                                                                                  '')
         data.kaitingriqi = \
             tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[2]/text()')[1].strip().split(" ")[0].replace(
                 u'年', '-').replace(u'月', '-').replace(u'日', '')
         try:
-            data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().split(":")[1].replace(';', '')
+            data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().split(":")[1].replace(';', '').replace('','')
         except:
             try:
                 data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip()
@@ -54,9 +64,9 @@ class zhongguotingshenggongkaiwan:
                 print u"没有主审"
         dangshiren_pattren = re.compile('var party = "(.*?)";', re.S)
         dangshiren_result = re.findall(dangshiren_pattren, r.text)
-        data.dangshiren = dangshiren_result[0].replace(u'\\', ',').replace(u"：", ":").replace(u"；", ";").replace(u'、', ',').replace(u"　","").replace(" ","");
-
-
+        data.dangshiren = dangshiren_result[0].replace(u'\\', ',').replace(u"：", ":").replace(u"；", ";").replace(u'、',
+                                                                                                                 ',').replace(
+            u"　", "").replace(" ", "").replace('\'', '').replace('\\','')
 
         beigao = re.compile(u'((被告)|(被申请(执行)?(再审)?)|(被上诉))(\d)?(人)?:(.*?)(;|$)', re.S)
         yuangao = re.compile(u'((?<=;)|(^))((原告)|(申请(执行)?(再审)?)|(上诉)|((公诉)(机关)?))(人)?:(.*?)(;|$)', re.S)
@@ -64,9 +74,9 @@ class zhongguotingshenggongkaiwan:
         yuangaoResult = re.findall(yuangao, data.dangshiren)
         qita_patten = re.compile(u'(第三)(人|方):(.*?)(;|$)', re.S)
         qita_result = re.findall(qita_patten, data.dangshiren)
-        beigaoList=[]
-        yuangaoList=[]
-        qitaList=[]
+        beigaoList = []
+        yuangaoList = []
+        qitaList = []
         try:
             for reslut in beigaoResult:
                 beigaoList.append(reslut[8])
@@ -83,16 +93,15 @@ class zhongguotingshenggongkaiwan:
                 qitaList.append(reslut[2])
         except:
             print("没有第三人")
-        data.yuangao=",".join(yuangaoList)
-        data.beigao=",".join(beigaoList)
-        data.qita=",".join(qitaList)
+        data.yuangao = ",".join(yuangaoList)
+        data.beigao = ",".join(beigaoList)
+        data.qita = ",".join(qitaList)
         data.gonggao_id = str(gonggaoId)
         print data.dangshiren
         print data.yuangao
         print data.beigao
 
-
-        data.fayuan = tree.xpath('//*[@id="wrapper"]/div[4]/div[1]/p/a/text()')[0]
+        data.fayuan = tree.xpath('//*[@id="wrapper"]/div[4]/div[1]/p/a/text()')[0].replace('\'', '')
         fayuanId = tree.xpath('//*[@id="wrapper"]/div[4]/div[1]/p/a/@href')[0].split("/")[2]
         data.sheng = self.getShengByFayuanId(fayuanId)
         data.created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -188,7 +197,7 @@ class zhongguotingshenggongkaiwan:
 if __name__ == "__main__":
     obj = zhongguotingshenggongkaiwan()
     obj.getShengInfo()
-    id = 1192715
+    id = 1254329
     while id < 2000000:
         if obj.sqltemp.queryCountBy_gonggaoid_and_no(id, 2) > 0:
             print u"重复数据:" + str(id)
@@ -212,7 +221,6 @@ if __name__ == "__main__":
     # yuangaoResult = re.findall(yuangao, strs)
     # for reslut in yuangaoResult:
     #     print(reslut[4])
-
 
     # id=1191738
     # href = obj.href + "live/" + str(id)
