@@ -50,16 +50,22 @@ class zhongguotingshenggongkaiwan:
                                                                                                                  '')
         except:
             print(u"MEI YOU AN anyou")
-        data.fating = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[4]/text()')[0].strip().replace('\'',
+        try:
+            data.fating = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[4]/text()')[0].strip().replace('\'',
                                                                                                                   '')
-        data.kaitingriqi = \
+        except:
+            print(u"MEI YOU fating")
+        try:
+            data.kaitingriqi = \
             tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[2]/text()')[1].strip().split(" ")[0].replace(
                 u'年', '-').replace(u'月', '-').replace(u'日', '')
+        except:
+            print(u"MEI YOU AN kaitingriqi")
         try:
-            data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().split(":")[1].replace(';', '').replace('','')
+            data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().split(":")[1].replace(';', '').replace('\\','')
         except:
             try:
-                data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip()
+                data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().replace('\\','')
             except:
                 print u"没有主审"
         dangshiren_pattren = re.compile('var party = "(.*?)";', re.S)
@@ -164,7 +170,7 @@ class zhongguotingshenggongkaiwan:
                                                                                                          time.localtime())
             print(href)
             page += 1
-            time.sleep(3)
+            time.sleep(1)
             r = requests.get(href, headers=self.headers)
             caselist = r.json()['list']
             if len(caselist) <= 0:
@@ -197,7 +203,7 @@ class zhongguotingshenggongkaiwan:
 if __name__ == "__main__":
     obj = zhongguotingshenggongkaiwan()
     obj.getShengInfo()
-    id = 1254329
+    id = 1295367
     while id < 2000000:
         if obj.sqltemp.queryCountBy_gonggaoid_and_no(id, 2) > 0:
             print u"重复数据:" + str(id)
@@ -207,7 +213,7 @@ if __name__ == "__main__":
         r = requests.get(href, headers=obj.headers)
         print href
         r.encoding = 'utf-8'
-        time.sleep(3)
+        time.sleep(1)
         if u"页面出错了" in r.text:
             print str(id) + u"不存在"
             id += 1
