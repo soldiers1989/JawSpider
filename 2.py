@@ -7,9 +7,7 @@ import time
 import copy
 import re
 from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.proxy import Proxy
-from selenium.webdriver.common.proxy import ProxyType
+import utils
 
 
 class zhongguotingshenggongkaiwan:
@@ -17,6 +15,7 @@ class zhongguotingshenggongkaiwan:
         self.href = "http://tingshen.court.gov.cn/"
         self.page = 1
         self.data = ktgg()
+        self.proxies={};
         self.data.no = '2'
         self.data.dangshirenjx_flag = '1'
         self.sqltemp = mysqlTemplate()
@@ -134,14 +133,21 @@ class zhongguotingshenggongkaiwan:
         """
         获取每个省的法院ＩＤ
         """
-        r = requests.get(self.href + "/court", headers=self.headers)
-        r.encoding = "utf-8"
-        tree = etree.HTML(r.text)
-        areacodeList = tree.xpath('//*[@id="wrapper"]/div[4]/div/div[1]/div/span/@areacode')
-        areaList = tree.xpath('//*[@id="wrapper"]/div[4]/div/div[1]/div/span/text()')
-        i = 0
-        courtCode_pattern = re.compile('<a href="/court/(\d+)" target="_blank">')
-
+        areacodeList=[]
+        while len(areacodeList)<=0:
+            r = requests.get(self.href + "/court", headers=self.headers,proxies=self.proxies)
+            r.encoding = "utf-8"
+            tree = etree.HTML(r.text)
+            areacodeList = tree.xpath('//*[@id="wrapper"]/div[4]/div/div[1]/div/span/@areacode')
+            areaList = tree.xpath('//*[@id="wrapper"]/div[4]/div/div[1]/div/span/text()')
+            courtCode_pattern = re.compile('<a href="/court/(\d+)" target="_blank">')
+            ips = utils.getProxy()
+            print("换代理")
+            print(obj.proxies)
+            obj.proxies["http"] = ips[0]
+            obj.proxies["https"] = ips[1]
+            time.sleep(1)
+        i=0
         for areacode in areacodeList:
             time.sleep(3)
             href = self.href + "/court?areaCode=" + areacode
@@ -203,21 +209,29 @@ class zhongguotingshenggongkaiwan:
 if __name__ == "__main__":
     obj = zhongguotingshenggongkaiwan()
     obj.getShengInfo()
-    id = 1295367
+    id = 1254329
     while id < 2000000:
         if obj.sqltemp.queryCountBy_gonggaoid_and_no(id, 2) > 0:
             print u"重复数据:" + str(id)
             id += 1
             continue
         href = obj.href + "live/" + str(id)
-        r = requests.get(href, headers=obj.headers)
-        print href
-        r.encoding = 'utf-8'
+        r = requests.get(href, proxies=obj.proxies)
         time.sleep(1)
+        r.encoding = 'utf-8'
+        time.sleep(3)
         if u"页面出错了" in r.text:
-            print str(id) + u"不存在"
-            id += 1
-            continue
+            ips = utils.getProxy()
+            print("换代理")
+            print(obj.proxies)
+            obj.proxies["http"] = ips[0]
+            obj.proxies["https"] = ips[1]
+            time.sleep(1)
+            r = requests.get(href, proxies=obj.proxies)
+            if u"页面出错了" in r.text:
+                print str(id) + u"不存在"
+                id += 1
+                continue
         obj.getDetailInfo(id, r.text)
         id += 1
 
