@@ -4,18 +4,32 @@ import requests
 from entity import ktgg
 from mysqlTemplate import mysqlTemplate
 import time
+from datetime import timedelta, datetime
 import copy
 import re
-from selenium import webdriver
+from Base import Base
+from pyutils.cate import Cate
 import utils
 
 
-class zhongguotingshenggongkaiwan:
+class zhongguotingshenggongkaiwan(Base):
+    class Logger:
+        def __init__(self, func):
+            self.func = func
+
+        def info(self, cate, msg, *args):
+            self.func(msg % args, "info", cate)
+
+        def error(self, cate, msg, *args):
+            self.func(msg % args, "error", cate)
+
     def __init__(self):
+        Base.__init__(self)
+        self.logger = self.Logger(self.log.log)
         self.href = "http://tingshen.court.gov.cn/"
         self.page = 1
+        self.proxies = {}
         self.data = ktgg()
-        self.proxies={};
         self.data.no = '2'
         self.data.dangshirenjx_flag = '1'
         self.sqltemp = mysqlTemplate()
@@ -34,44 +48,25 @@ class zhongguotingshenggongkaiwan:
     def getDetailInfo(self, gonggaoId, text):
         tree = etree.HTML(text)
         data = copy.deepcopy(self.data)
-        try:
-            data.gonggao = tree.xpath('//div[@class="part case-summary"]/p/@title')[0].strip().replace('\'',
-                                                                                                                 '')
-        except:
-            print(u"没有公告")
-        try:
-            data.anhao = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[1]/@title')[0].strip().replace('\'',
-                                                                                                                 '')
-        except:
-            print(u"MEI YOU AN HAO")
-        try:
-            data.anyou = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[3]/@title')[0].strip().replace('\'',
-                                                                                                                 '')
-        except:
-            print(u"MEI YOU AN anyou")
-        try:
-            data.fating = tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[4]/text()')[0].strip().replace('\'',
-                                                                                                                  '')
-        except:
-            print(u"MEI YOU fating")
-        try:
-            data.kaitingriqi = \
-            tree.xpath('//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[2]/text()')[1].strip().split(" ")[0].replace(
+        data.gonggao = self.getDetailInfoByXpath(tree, '//div[@class="part case-summary"]/p/@title', 0)
+        data.anhao = self.getDetailInfoByXpath(tree, '//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[1]/@title', 0)
+        data.anyou = self.getDetailInfoByXpath(tree, '//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[3]/@title', 0)
+        data.fating = self.getDetailInfoByXpath(tree, '//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[4]/text()', 0)
+        data.kaitingriqi = \
+            self.getDetailInfoByXpath(tree, '//*[@id="wrapper"]/div[5]/div[1]/div[3]/ul[1]/li[2]/text()', 1).split(" ")[
+                0].replace(
                 u'年', '-').replace(u'月', '-').replace(u'日', '')
-        except:
-            print(u"MEI YOU AN kaitingriqi")
         try:
-            data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().split(":")[1].replace(';', '').replace('\\','')
+            zhushen = self.getDetailInfoByXpath(tree, '//*[@id="judgeul"]/li/i/text()', 0).split(":")[1].replace(';',
+                                                                                                                 '')
         except:
-            try:
-                data.zhushen = tree.xpath('//*[@id="judgeul"]/li/i/text()')[0].strip().replace('\\','')
-            except:
-                print u"没有主审"
+            zhushen = self.getDetailInfoByXpath(tree, '//*[@id="judgeul"]/li/i/text()', 0)
+        data.zhushen = zhushen
         dangshiren_pattren = re.compile('var party = "(.*?)";', re.S)
         dangshiren_result = re.findall(dangshiren_pattren, r.text)
         data.dangshiren = dangshiren_result[0].replace(u'\\', ',').replace(u"：", ":").replace(u"；", ";").replace(u'、',
                                                                                                                  ',').replace(
-            u"　", "").replace(" ", "").replace('\'', '').replace('\\','')
+            u"　", "").replace(" ", "").replace('\'', '')
 
         beigao = re.compile(u'((被告)|(被申请(执行)?(再审)?)|(被上诉))(\d)?(人)?:(.*?)(;|$)', re.S)
         yuangao = re.compile(u'((?<=;)|(^))((原告)|(申请(执行)?(再审)?)|(上诉)|((公诉)(机关)?))(人)?:(.*?)(;|$)', re.S)
@@ -110,13 +105,11 @@ class zhongguotingshenggongkaiwan:
         fayuanId = tree.xpath('//*[@id="wrapper"]/div[4]/div[1]/p/a/@href')[0].split("/")[2]
         data.sheng = self.getShengByFayuanId(fayuanId)
         data.created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        if len(data.yuangao) > 0:
-            data.dangshirenjx = data.yuangao + "," + data.beigao
-        else:
-            data.dangshirenjx = data.beigao
-        if len(data.qita) > 0:
-            data.dangshirenjx = data.dangshirenjx + "," + data.qita
-        self.sqltemp.insertKtgg(data)
+
+        data.dangshirenjx = ",".join(yuangaoList + beigaoList + qitaList)
+        if data.kaitingriqi == "" and data.dangshirenjx == "":
+            raise Exception
+        self.sqltemp.insertKtgg_with_unicode(data)
 
     def getShengByFayuanId(self, fayuanId):
         """
@@ -129,13 +122,22 @@ class zhongguotingshenggongkaiwan:
                 return list['areaName']
         return ""
 
+    def getDetailInfoByXpath(self, tree, xpath, index):
+        try:
+            return tree.xpath(xpath)[index].strip().replace(
+                '\'',
+                '')
+        except:
+            print(u"没有信息" + xpath)
+            return ""
+
     def getShengInfo(self):
         """
         获取每个省的法院ＩＤ
         """
-        areacodeList=[]
-        while len(areacodeList)<=0:
-            r = requests.get(self.href + "/court", headers=self.headers,proxies=self.proxies)
+        areacodeList = []
+        while len(areacodeList) <= 0:
+            r = requests.get(self.href + "/court", headers=self.headers, proxies=self.proxies)
             r.encoding = "utf-8"
             tree = etree.HTML(r.text)
             areacodeList = tree.xpath('//*[@id="wrapper"]/div[4]/div/div[1]/div/span/@areacode')
@@ -144,10 +146,10 @@ class zhongguotingshenggongkaiwan:
             ips = utils.getProxy()
             print("换代理")
             print(obj.proxies)
-            obj.proxies["http"] = ips[0]
-            obj.proxies["https"] = ips[1]
+            self.proxies["http"] = ips[0]
+            self.proxies["https"] = ips[1]
             time.sleep(1)
-        i=0
+        i = 0
         for areacode in areacodeList:
             time.sleep(3)
             href = self.href + "/court?areaCode=" + areacode
@@ -164,90 +166,72 @@ class zhongguotingshenggongkaiwan:
             i += 1
         print(u"省信息获取完毕")
 
-    def getTodayGonggaoId(self):
-        """
-        获取今天的公告ＩＤ
-        :return:
-        """
-        gonggaoidList = []
-        page = 1
-        while True:
-            href = self.href + "preview/findCases?pageNumber=" + str(page) + "&timeStr=" + time.strftime("%Y-%m-%d",
-                                                                                                         time.localtime())
-            print(href)
-            page += 1
-            time.sleep(1)
-            r = requests.get(href, headers=self.headers)
-            caselist = r.json()['list']
-            if len(caselist) <= 0:
-                break
-            for item in caselist:
-                gonggaoidList.append(item['caseId'])
-        print u"今日公告id获取完毕"
-        return gonggaoidList
-
-    def get_cai_pan_wen_shu(self, id):
-        """
-        获得裁判文书
-        :return: 裁判文书
-        """
-        driver = webdriver.PhantomJS()
-        driver.set_page_load_timeout(5)
-        driver.set_script_timeout(5)
-        driver.get(self.href + "live/" + str(id))
-        elem = driver.find_element_by_xpath('//*[@id="adDocuments"]/a')
-        time.sleep(4)
-        driver.execute_script("arguments[0].scrollIntoView(false);", elem)
-        time.sleep(3)
-        elem.click()
-        handkes = driver.window_handles
-        driver.switch_to_window(handkes[-1])
-        time.sleep(4)
-        print driver.page_source
-
 
 if __name__ == "__main__":
+
     obj = zhongguotingshenggongkaiwan()
-    obj.getShengInfo()
-    id = 1254329
-    while id < 2000000:
+    yesterday = datetime.today() + timedelta(-3)
+    # today_format = datetime.today().strftime('%Y-%m-%d')
+    # yesterday_format = yesterday.strftime('%Y-%m-%d')
+    today_format = '2018-04-13'
+    yesterday_format = '2018-04-10'
+
+    min = int(
+        obj.sqltemp.queryMax_GonggaoId_by_no_and_kaitingriqi(2, yesterday_format))
+    max = int(
+        obj.sqltemp.queryMax_GonggaoId_by_no_and_kaitingriqi(2, today_format)) + 3000
+    obj.logger.info(Cate.initial, u"遍历范围：(" + str(min) + "," + str(max) + ")")
+    # obj.getShengInfo()
+    for id in range(min, max):
         if obj.sqltemp.queryCountBy_gonggaoid_and_no(id, 2) > 0:
-            print u"重复数据:" + str(id)
-            id += 1
+            obj.logger.info(Cate.detail, u"重复数据:" + str(id))
             continue
         href = obj.href + "live/" + str(id)
-        r = requests.get(href, proxies=obj.proxies)
+        print href
+        r = requests.get(href, headers=obj.headers)
         time.sleep(1)
         r.encoding = 'utf-8'
-        time.sleep(3)
-        if u"页面出错了" in r.text:
+        print(len(r.text))
+        s = requests.session()
+        s.keep_alive = False
+
+        ergodic_times = 10
+        while 'document.location.reload();' in r.text:
+            ergodic_times -= 1
+            if ergodic_times < 0:
+                obj.log.log('crawler failed:id:' + str(id), 'error', 'update_err')
+                break
             ips = utils.getProxy()
             print("换代理")
-            print(obj.proxies)
             obj.proxies["http"] = ips[0]
             obj.proxies["https"] = ips[1]
+            print(obj.proxies)
             time.sleep(1)
-            r = requests.get(href, proxies=obj.proxies)
-            if u"页面出错了" in r.text:
-                print str(id) + u"不存在"
-                id += 1
-                continue
-        obj.getDetailInfo(id, r.text)
-        id += 1
-
-    # strs=u"上诉人:许小川;上诉人:邵清华;上诉人:邵清华;上诉人:邵清华;上诉人:邵清华;上诉人:金鑫;上诉人:金鑫;上诉人:金鑫;"
-    #
-    # yuangao = re.compile(u'((?<=;)|(^))(上诉)(人)?:(.*?);', re.S)
-    # yuangaoResult = re.findall(yuangao, strs)
-    # for reslut in yuangaoResult:
-    #     print(reslut[4])
-
-    # id=1191738
-    # href = obj.href + "live/" + str(id)
-    # r = requests.get(href, headers=obj.headers)
-    # print href
-    # r.encoding = 'utf-8'
-    # time.sleep(3)
-    #
-    # obj.getDetailInfo(id, r.text)
-    # id += 1
+            try:
+                r.close()
+                print u"使用代理"
+                r = requests.get(href, headers=obj.headers, proxies=obj.proxies)
+            except:
+                ips = utils.getProxy()
+                print("换代理")
+                obj.proxies["http"] = ips[0]
+                obj.proxies["https"] = ips[1]
+                print(obj.proxies)
+                time.sleep(1)
+            else:
+                if 'document.location.reload();' not in r.text:
+                    break
+        if u"页面出错了" in r.text or len(r.text) < 2000:
+            r.close()
+            obj.logger.info(Cate.detail, str(id) + u"不存在")
+            continue
+        # print r.text
+        obj.logger.info(Cate.detail, str(id) + u"详情")
+        try:
+            obj.getDetailInfo(id, r.text)
+        except:
+            obj.log.log('crawler failed' + str(id), 'error', 'update_err')
+            raise Exception
+        r.close()
+    obj.log.log('crawler update success', 'info', 'update_ok')
+    obj.logger.info(Cate.ending, "任务完成")
