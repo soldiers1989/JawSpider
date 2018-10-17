@@ -442,16 +442,16 @@ def request_hive_aes(phone_list):
 obj = sfss_get_count_from_hive_day()
 
 
-# obj.end_date = datetime(datetime.today().year, datetime.today().month, 1).strftime("%Y-%m-%d")
-# obj.start_date = get_1st_of_last_month(obj.end_date)
-# obj.get_all()
+obj.end_date = datetime(datetime.today().year,7, 1).strftime("%Y-%m-%d")
+obj.start_date = get_1st_of_last_month(obj.end_date)
+obj.get_all()
 
 
-obj.start_date = datetime(2018, 4, 1).strftime("%Y-%m-%d")
-for i in range(1, 12):
-    obj.end_date = obj.start_date
-    obj.start_date = get_1st_of_last_month(obj.start_date)
-    obj.get_all()
+# obj.start_date = datetime(2018, 4, 1).strftime("%Y-%m-%d")
+# for i in range(1, 12):
+#     obj.end_date = obj.start_date
+#     obj.start_date = get_1st_of_last_month(obj.start_date)
+#     obj.get_all()
     # print obj.start_date, obj.end_date
 # print  rule_8(hive_cur,start_date,end_date,269,1343)
 # list = []

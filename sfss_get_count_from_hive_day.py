@@ -35,7 +35,7 @@ class sfss_get_count_from_hive_day:
                                        charset="utf8"
                                        )
         self.all_data_hive = hive.connect(
-            host='cd.icekredit.com',
+            host='192.168.1.110',
             username='zgq',
             password='zgq_fjz189dufjdzklsur89qrojf88',
             auth='LDAP'
@@ -422,7 +422,7 @@ def get_last_day(today_str):
     return last_day.strftime('%Y-%m-%d')
 obj = sfss_get_count_from_hive_day()
 obj.start_date=datetime.today().strftime('%Y-%m-%d')
-for i in range(1, 365):
+for i in range(1, 5):
     obj.end_date = obj.start_date
     obj.start_date = get_last_day(obj.start_date)
     # print obj.start_date,obj.end_date

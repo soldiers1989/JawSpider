@@ -1,2 +1,4 @@
-s = [1, 2, 3, 4]
-print min(s),max(s)
+# -*- coding: UTF-8 -*-
+import ast
+root_node = ast.parse("print 'hello world'")
+print(root_node)
